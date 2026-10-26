@@ -1,0 +1,128 @@
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-success text-white py-3">
+                <h4 class="card-title mb-0"><i class="bi bi-plus-circle"></i> Tambah Tanaman Baru</h4>
+            </div>
+            <div class="card-body p-4">
+                
+                <div id="alert-container"></div>
+
+                <form id="formTambahTanaman" novalidate>
+                    <div class="mb-3">
+                        <label for="name" class="form-label font-weight-bold">Nama Tanaman <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="name" maxlength="60" placeholder="Contoh: Aglonema Red Anjamani">
+                        <div class="form-text">Maksimal 60 karakter.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="type" class="form-label">Jenis Tanaman <span class="text-danger">*</span></label>
+                        <select class="form-select" id="type">
+                            <option value="">-- Pilih Jenis Tanaman --</option>
+                            <option value="Hias">Tanaman Hias</option>
+                            <option value="Sayuran">Sayuran</option>
+                            <option value="Buah">Buah</option>
+                            <option value="Herbal">Herbal</option>
+                            <option value="Lainnya">Lainnya</option>
+                        </select>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="location" class="form-label">Lokasi Tanaman</label>
+                            <input type="text" class="form-control" id="location" maxlength="50" placeholder="Contoh: Rak Balkon">
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="interval" class="form-label">Interval Pengecekan (Hari) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="interval" min="1" max="365" placeholder="1 - 365 Hari">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="next" class="form-label">Tanggal Pengecekan Pertama/Berikutnya <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="next">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Catatan Tambahan</label>
+                        <textarea class="form-control" id="notes" rows="3" placeholder="Catatan perawatan..."></textarea>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="reset" class="btn btn-light">Reset Form</button>
+                        <button type="submit" class="btn btn-success px-4"><i class="bi bi-save"></i> Simpan Data Tanaman</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        $('#formTambahTanaman').on('submit', function(e) {
+            e.preventDefault();
+
+            let name = $('#name').val().trim();
+            let type = $('#type').val();
+            let location = $('#location').val().trim() || 'Tidak Ditentukan';
+            let interval = parseInt($('#interval').val());
+            let nextDate = $('#next').val();
+            let notes = $('#notes').val().trim();
+            
+            let errors = [];
+
+            if (name === '') errors.push('Nama tanaman <b>wajib diisi</b>.');
+            if (type === '') errors.push('Silakan pilih <b>jenis tanaman</b>.');
+            if (isNaN(interval) || interval < 1 || interval > 365) errors.push('Interval pengecekan air harus <b>1-365 hari</b>.');
+            if (nextDate === '') errors.push('Tanggal pengecekan <b>wajib diisi</b>.');
+
+            if (errors.length > 0) {
+                let errorHtml = '<ul class="mb-0 fs-6">';
+                $.each(errors, function(index, value) { errorHtml += '<li>' + value + '</li>'; });
+                errorHtml += '</ul>';
+
+                $('#alert-container').html(`
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="bi bi-x-circle-fill me-2"></i> <strong>Validasi Gagal!</strong>
+                        <div class="mt-2">${errorHtml}</div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `);
+            } else {
+                // Simpan Data ke LocalStorage Browser
+                let plants = JSON.parse(localStorage.getItem('plantcare_plants')) || [
+                    { id: 1, name: "Janda Bolong", type: "Hias", location: "Teras Depan", interval: 2, last: "2026-10-24", next: "2026-10-26", status: "need" },
+                    { id: 2, name: "Cabai Rawit", type: "Sayuran", location: "Kebun Belakang", interval: 1, last: "2026-10-26", next: "2026-10-27", status: "safe" }
+                ];
+
+                let newPlant = {
+                    id: Date.now(),
+                    name: name,
+                    type: type,
+                    location: location,
+                    interval: interval,
+                    last: "Belum Pernah",
+                    next: nextDate,
+                    status: "need",
+                    notes: notes
+                };
+
+                plants.push(newPlant);
+                localStorage.setItem('plantcare_plants', JSON.stringify(plants));
+
+                $('#alert-container').html(`
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="bi bi-check-circle-fill me-2"></i> <strong>Berhasil!</strong> Data tanaman <b>${name}</b> telah disimpan ke Dashboard!
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `);
+
+                this.reset();
+            }
+        });
+    });
+</script>

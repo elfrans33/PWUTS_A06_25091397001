@@ -1,0 +1,177 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-flower2 text-success"></i> Dashboard Kebun Saya</h2>
+    <span class="badge bg-success p-2">Status: Aktif</span>
+</div>
+
+<!-- Ringkasan Kebun -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card bg-primary text-white shadow-sm border-0">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="card-title mb-0">Total Tanaman</h6>
+                    <h2 class="mb-0 fw-bold" id="total-count">0</h2>
+                </div>
+                <i class="bi bi-tree fs-1 opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-warning text-dark shadow-sm border-0">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="card-title mb-0">Perlu Dicek</h6>
+                    <h2 class="mb-0 fw-bold" id="need-check-count">0</h2>
+                </div>
+                <i class="bi bi-droplet-half fs-1 opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-success text-white shadow-sm border-0">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="card-title mb-0">Disiram Hari Ini</h6>
+                    <h2 class="mb-0 fw-bold" id="watered-today-count">0</h2>
+                </div>
+                <i class="bi bi-check-circle fs-1 opacity-50"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Control & Filter -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-6">
+                <div class="btn-group w-100" role="group">
+                    <button type="button" class="btn btn-outline-success active filter-btn" data-filter="all">Semua Tanaman</button>
+                    <button type="button" class="btn btn-outline-warning filter-btn" data-filter="need">Perlu Dicek Hari Ini</button>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <input type="text" id="search-plant" class="form-control" placeholder="Cari tanaman berdasarkan nama atau lokasi...">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Daftar Tanaman -->
+<div class="row g-3" id="plant-list">
+    <!-- Diisi otomatis oleh JavaScript dari LocalStorage -->
+</div>
+
+<script>
+    $(document).ready(function() {
+        // Data awal default jika belum ada di LocalStorage
+        let defaultPlants = [
+            { id: 1, name: "Janda Bolong", type: "Hias", location: "Teras Depan", interval: 2, last: "2026-10-24", next: "2026-10-26", status: "need" },
+            { id: 2, name: "Cabai Rawit", type: "Sayuran", location: "Kebun Belakang", interval: 1, last: "2026-10-26", next: "2026-10-27", status: "safe" }
+        ];
+
+        function getPlants() {
+            let data = localStorage.getItem('plantcare_plants');
+            if (!data) {
+                localStorage.setItem('plantcare_plants', JSON.stringify(defaultPlants));
+                return defaultPlants;
+            }
+            return JSON.parse(data);
+        }
+
+        function renderDashboard() {
+            let plants = getPlants();
+            let plantListHtml = '';
+            let totalCount = plants.length;
+            let needCount = 0;
+            let wateredTodayCount = 0;
+            let todayStr = new Date().toISOString().split('T')[0];
+
+            $.each(plants, function(index, p) {
+                if (p.status === 'need') needCount++;
+                if (p.last === todayStr) wateredTodayCount++;
+
+                let borderClass = p.status === 'need' ? 'border-warning' : 'border-success';
+                let textClass = p.status === 'need' ? 'text-danger' : 'text-success';
+
+                plantListHtml += `
+                    <div class="col-md-4 plant-card" data-status="${p.status}" data-name="${p.name}" data-location="${p.location}">
+                        <div class="card h-100 shadow-sm border-start ${borderClass} border-4">
+                            <div class="card-body">
+                                <span class="badge bg-info mb-2">${p.type}</span>
+                                <h5 class="card-title">${p.name}</h5>
+                                <p class="card-text text-muted mb-1"><i class="bi bi-geo-alt"></i> ${p.location}</p>
+                                <hr>
+                                <small class="d-block text-secondary">Interval: <b>${p.interval} Hari</b></small>
+                                <small class="d-block text-secondary">Terakhir Disiram: <b class="last-date">${p.last}</b></small>
+                                <small class="d-block ${textClass} fw-bold mt-1">Jadwal Cek: <span class="next-date">${p.next}</span></small>
+                            </div>
+                            <div class="card-footer bg-white border-0">
+                                <button class="btn btn-sm w-100 btn-siram ${p.status === 'need' ? 'btn-success' : 'btn-outline-success'}" data-id="${p.id}" data-interval="${p.interval}">
+                                    <i class="bi bi-droplet-fill"></i> Tandai Sudah Disiram
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            $('#plant-list').html(plantListHtml);
+            $('#total-count').text(totalCount);
+            $('#need-check-count').text(needCount);
+            $('#watered-today-count').text(wateredTodayCount);
+        }
+
+        // Jalankan Render Pertama
+        renderDashboard();
+
+        // Fitur Filter
+        $('.filter-btn').click(function() {
+            $('.filter-btn').removeClass('active');
+            $(this).addClass('active');
+            let filter = $(this).data('filter');
+            if (filter === 'all') {
+                $('.plant-card').show();
+            } else {
+                $('.plant-card').hide();
+                $('.plant-card[data-status="need"]').show();
+            }
+        });
+
+        // Fitur Search
+        $('#search-plant').on('keyup', function() {
+            let value = $(this).val().toLowerCase();
+            $('.plant-card').filter(function() {
+                let name = $(this).data('name').toLowerCase();
+                let loc = $(this).data('location').toLowerCase();
+                $(this).toggle(name.indexOf(value) > -1 || loc.indexOf(value) > -1);
+            });
+        });
+
+        // Fitur Siram Tanaman
+        $(document).on('click', '.btn-siram', function() {
+            let plantId = $(this).data('id');
+            let interval = parseInt($(this).data('interval'));
+            let plants = getPlants();
+
+            let today = new Date();
+            let todayStr = today.toISOString().split('T')[0];
+            
+            let nextDate = new Date();
+            nextDate.setDate(today.getDate() + interval);
+            let nextStr = nextDate.toISOString().split('T')[0];
+
+            $.each(plants, function(index, p) {
+                if (p.id == plantId) {
+                    p.last = todayStr;
+                    p.next = nextStr;
+                    p.status = 'safe';
+                }
+            });
+
+            localStorage.setItem('plantcare_plants', JSON.stringify(plants));
+            renderDashboard();
+            alert('Penyiraman berhasil dicatat!');
+        });
+    });
+</script>
